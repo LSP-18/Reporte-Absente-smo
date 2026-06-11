@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopee RH Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- ====== LOGIN SCREEN ====== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-icon"><i class="fa-solid fa-bag-shopping"></i></div>
+      <h1>Shopee RH</h1>
+      <p>Dashboard de Recursos Humanos</p>
+    </div>
+    <div class="form-group">
+      <label>E-mail</label>
+      <div class="input-wrap">
+        <i class="fa-solid fa-envelope"></i>
+        <input type="email" id="login-email" placeholder="admin@shopee.com" value="admin@shopee.com" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <div class="input-wrap">
+        <i class="fa-solid fa-lock"></i>
+        <input type="password" id="login-password" placeholder="••••••••" value="shopee123" />
+      </div>
+    </div>
+    <button class="btn-login" onclick="App.login()">
+      <i class="fa-solid fa-right-to-bracket" style="margin-right:8px"></i>Entrar
+    </button>
+  </div>
+</div>
+
+<!-- ====== MAIN APP ====== -->
+<div id="app">
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div id="sidebar-overlay" onclick="App.toggleSidebar()"></div>
+
+  <!-- ====== SIDEBAR ====== -->
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo"><i class="fa-solid fa-bag-shopping"></i></div>
+      <div class="sidebar-brand">
+        <h2>Shopee RH</h2>
+        <span>Dashboard Executivo</span>
+      </div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-section-label">PRINCIPAL</div>
+      <div class="nav-item active" data-page="dashboard" data-label="Dashboard" onclick="App.navigate('dashboard')">
+        <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
+      </div>
+      <div class="nav-item" data-page="faltas" data-label="Faltas e Atestados" onclick="App.navigate('faltas')">
+        <i class="fa-solid fa-calendar-xmark"></i><span>Faltas e Atestados</span>
+      </div>
+      <div class="nav-item" data-page="entrevistas" data-label="Entrevistas ABS" onclick="App.navigate('entrevistas')">
+        <i class="fa-solid fa-comments"></i><span>Entrevistas ABS</span>
+      </div>
+
+      <div class="nav-section-label">DISCIPLINAR</div>
+      <div class="nav-item" data-page="medidas" data-label="Medidas Disciplinares" onclick="App.navigate('medidas')">
+        <i class="fa-solid fa-gavel"></i><span>Medidas Disciplinares</span>
+      </div>
+      <div class="nav-item" data-page="suspensoes" data-label="Suspensões" onclick="App.navigate('suspensoes')">
+        <i class="fa-solid fa-user-slash"></i><span>Suspensões</span>
+      </div>
+
+      <div class="nav-section-label">PERFORMANCE</div>
+      <div class="nav-item" data-page="sinergia" data-label="Sinergia S1/S2" onclick="App.navigate('sinergia')">
+        <i class="fa-solid fa-chart-pie"></i><span>Sinergia S1/S2</span>
+      </div>
+      <div class="nav-item" data-page="colaboradores" data-label="Colaboradores" onclick="App.navigate('colaboradores')">
+        <i class="fa-solid fa-users"></i><span>Colaboradores</span>
+      </div>
+
+      <div class="nav-section-label">SISTEMA</div>
+      <div class="nav-item" data-page="configuracoes" data-label="Configurações" onclick="App.navigate('configuracoes')">
+        <i class="fa-solid fa-gear"></i><span>Configurações</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="nav-item" data-label="Sair" onclick="App.logout()">
+        <i class="fa-solid fa-right-from-bracket" style="color:rgba(255,255,255,.4)"></i>
+        <span>Sair</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ====== HEADER ====== -->
+  <header id="header">
+    <button class="header-toggle" onclick="App.toggleSidebar()">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="header-title" id="header-title">Dashboard</div>
+    <div class="header-actions">
+      <button class="header-btn" title="Notificações">
+        <i class="fa-solid fa-bell"></i>
+        <span class="notif-badge"></span>
+      </button>
+      <button class="header-btn" id="dark-toggle" title="Alternar tema" onclick="App.toggleDark()">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button class="header-btn" title="Exportar Excel" onclick="App.exportExcel()">
+        <i class="fa-solid fa-file-excel"></i>
+      </button>
+      <button class="header-btn" title="Exportar PDF" onclick="App.exportPDF()">
+        <i class="fa-solid fa-file-pdf"></i>
+      </button>
+      <div class="header-user">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Administrador</div>
+          <div class="user-role">RH Manager</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ====== MAIN CONTENT ====== -->
+  <main id="main-content">
+
+    <!-- ========== DASHBOARD ========== -->
+    <section id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div>
+          <h2>Dashboard Executivo</h2>
+          <p>Visão geral em tempo real · Atualizado agora</p>
+        </div>
+        <button class="btn btn-primary" onclick="Modals.openOcorrencia()">
+          <i class="fa-solid fa-plus"></i> Adicionar Ocorrência
+        </button>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <label><i class="fa-solid fa-filter"></i> Filtros</label>
+        <input type="date" id="dash-dt-ini" />
+        <input type="date" id="dash-dt-fim" />
+        <select id="dash-mes">
+          <option value="">Todos os meses</option>
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+          <option value="3">Março</option><option value="4">Abril</option>
+          <option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option>
+          <option value="9">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select id="dash-ano">
+          <option value="">Todos os anos</option>
+          <option value="2024">2024</option>
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="Pages.dashboard.load()">
+          <i class="fa-solid fa-rotate-right"></i> Atualizar
+        </button>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="cards-grid" id="dash-cards">
+        <div class="card" style="--card-accent:#EE4D2D;--card-icon-bg:#FFF3F0;--card-icon-color:#EE4D2D">
+          <div class="card-icon"><i class="fa-solid fa-users"></i></div>
+          <div class="card-value" id="kpi-headcount">0</div>
+          <div class="card-label">Headcount Total</div>
+        </div>
+        <div class="card" style="--card-accent:#F59E0B;--card-icon-bg:#FFFBEB;--card-icon-color:#F59E0B">
+          <div class="card-icon"><i class="fa-solid fa-percent"></i></div>
+          <div class="card-value" id="kpi-abs">0%</div>
+          <div class="card-label">ABS %</div>
+        </div>
+        <div class="card" style="--card-accent:#EF4444;--card-icon-bg:#FEF2F2;--card-icon-color:#EF4444">
+          <div class="card-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+          <div class="card-value" id="kpi-faltas">0</div>
+          <div class="card-label">Total de Faltas</div>
+        </div>
+        <div class="card" style="--card-accent:#3B82F6;--card-icon-bg:#EFF6FF;--card-icon-color:#3B82F6">
+          <div class="card-icon"><i class="fa-solid fa-file-medical"></i></div>
+          <div class="card-value" id="kpi-atestados">0</div>
+          <div class="card-label">Total de Atestados</div>
+        </div>
+        <div class="card" style="--card-accent:#8B5CF6;--card-icon-bg:#F5F3FF;--card-icon-color:#8B5CF6">
+          <div class="card-icon"><i class="fa-solid fa-hospital"></i></div>
+          <div class="card-value" id="kpi-afastamentos">0</div>
+          <div class="card-label">Total de Afastamentos</div>
+        </div>
+        <div class="card" style="--card-accent:#10B981;--card-icon-bg:#ECFDF5;--card-icon-color:#10B981">
+          <div class="card-icon"><i class="fa-solid fa-star"></i></div>
+          <div class="card-value" id="kpi-s1">0</div>
+          <div class="card-label">Sinergia S1</div>
+        </div>
+        <div class="card" style="--card-accent:#06B6D4;--card-icon-bg:#ECFEFF;--card-icon-color:#06B6D4">
+          <div class="card-icon"><i class="fa-solid fa-star-half-stroke"></i></div>
+          <div class="card-value" id="kpi-s2">0</div>
+          <div class="card-label">Sinergia S2</div>
+        </div>
+        <div class="card" style="--card-accent:#F97316;--card-icon-bg:#FFF7ED;--card-icon-color:#F97316">
+          <div class="card-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div class="card-value" id="kpi-advertencias">0</div>
+          <div class="card-label">Advertências</div>
+        </div>
+        <div class="card" style="--card-accent:#DC2626;--card-icon-bg:#FEF2F2;--card-icon-color:#DC2626">
+          <div class="card-icon"><i class="fa-solid fa-ban"></i></div>
+          <div class="card-value" id="kpi-suspensoes">0</div>
+          <div class="card-label">Suspensões</div>
+        </div>
+        <div class="card" style="--card-accent:#7C3AED;--card-icon-bg:#F5F3FF;--card-icon-color:#7C3AED">
+          <div class="card-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
+          <div class="card-value" id="kpi-turnover">0%</div>
+          <div class="card-label">Turnover</div>
+        </div>
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-line"></i> Evolução Mensal do ABS</h3>
+          <div class="chart-wrap"><canvas id="chart-abs-mensal"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-bar"></i> Faltas vs Atestados por Mês</h3>
+          <div class="chart-wrap"><canvas id="chart-faltas-mes"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-area"></i> Evolução Semanal</h3>
+          <div class="chart-wrap"><canvas id="chart-semanal"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-column"></i> Advertências e Suspensões</h3>
+          <div class="chart-wrap"><canvas id="chart-disciplinar-mes"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Charts Row 2 - Rankings -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-ranking-star"></i> Ranking: Mais Faltas</h3>
+          <div class="chart-wrap"><canvas id="chart-rank-faltas"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-ranking-star"></i> Ranking: Mais Advertências</h3>
+          <div class="chart-wrap"><canvas id="chart-rank-adv"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FALTAS E ATESTADOS ========== -->
+    <section id="page-faltas" class="page">
+      <div class="page-header">
+        <div>
+          <h2>Faltas e Atestados</h2>
+          <p>Controle de ausências e documentação médica</p>
+        </div>
+        <button class="btn btn-primary" onclick="Modals.openFalta()">
+          <i class="fa-solid fa-plus"></i> Adicionar Falta/Atestado
+        </button>
+      </div>
+
+      <div class="filter-bar">
+        <label><i class="fa-solid fa-filter"></i></label>
+        <input type="date" id="f-dt-ini" /><input type="date" id="f-dt-fim" />
+        <select id="f-tipo"><option value="">Todos os tipos</option><option>Falta</option><option>Atestado</option><option>Afastamento</option></select>
+        <input type="text" id="f-colab" placeholder="Colaborador..." />
+        <button class="btn btn-secondary btn-sm" onclick="Pages.faltas.load()"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#FEF2F2;color:#EF4444"><i class="fa-solid fa-calendar-xmark"></i></div>
+          <div><div class="stat-mini-val" id="f-total-faltas">0</div><div class="stat-mini-label">Total de Faltas</div></div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#EFF6FF;color:#3B82F6"><i class="fa-solid fa-file-medical"></i></div>
+          <div><div class="stat-mini-val" id="f-total-atestados">0</div><div class="stat-mini-label">Total de Atestados</div></div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#F5F3FF;color:#8B5CF6"><i class="fa-solid fa-hospital"></i></div>
+          <div><div class="stat-mini-val" id="f-total-afastamentos">0</div><div class="stat-mini-label">Afastamentos</div></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-line"></i> Evolução Mensal</h3>
+          <div class="chart-wrap"><canvas id="chart-faltas-evolucao"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-ranking-star"></i> Top 10 Colaboradores</h3>
+          <div class="chart-wrap"><canvas id="chart-faltas-top10"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3><i class="fa-solid fa-table"></i> Registros</h3>
+          <div class="table-actions">
+            <div class="search-wrap">
+              <i class="fa-solid fa-search"></i>
+              <input type="text" class="search-input" id="faltas-search" placeholder="Pesquisar..." oninput="Pages.faltas.search(this.value)" />
+            </div>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="faltas-table">
+            <thead>
+              <tr>
+                <th onclick="App.sortTable('faltas','colaborador')">Colaborador <i class="fa-solid fa-sort"></i></th>
+                <th onclick="App.sortTable('faltas','data')">Data <i class="fa-solid fa-sort"></i></th>
+                <th>Tipo</th>
+                <th>Observação</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="faltas-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-pagination" id="faltas-pagination"></div>
+      </div>
+    </section>
+
+    <!-- ========== ENTREVISTAS ABS ========== -->
+    <section id="page-entrevistas" class="page">
+      <div class="page-header">
+        <div><h2>Entrevistas ABS</h2><p>Registro e acompanhamento de entrevistas de absenteísmo</p></div>
+        <button class="btn btn-primary" onclick="Modals.openEntrevista()"><i class="fa-solid fa-plus"></i> Registrar Entrevista</button>
+      </div>
+
+      <div class="filter-bar">
+        <label><i class="fa-solid fa-filter"></i></label>
+        <input type="date" id="e-dt-ini" /><input type="date" id="e-dt-fim" />
+        <select id="e-status"><option value="">Todos os status</option><option>Realizada</option><option>Pendente</option><option>Agendada</option></select>
+        <input type="text" id="e-colab" placeholder="Colaborador..." />
+        <button class="btn btn-secondary btn-sm" onclick="Pages.entrevistas.load()"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#ECFDF5;color:#10B981"><i class="fa-solid fa-check-circle"></i></div>
+          <div><div class="stat-mini-val" id="e-realizadas">0</div><div class="stat-mini-label">Realizadas</div></div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#FFFBEB;color:#F59E0B"><i class="fa-solid fa-clock"></i></div>
+          <div><div class="stat-mini-val" id="e-pendentes">0</div><div class="stat-mini-label">Pendentes</div></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-pie"></i> Motivos Mais Recorrentes</h3>
+          <div class="chart-wrap"><canvas id="chart-ent-motivos"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-bar"></i> Entrevistas por Mês</h3>
+          <div class="chart-wrap"><canvas id="chart-ent-mes"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3><i class="fa-solid fa-table"></i> Registros</h3>
+          <div class="search-wrap"><i class="fa-solid fa-search"></i><input type="text" class="search-input" id="entrevistas-search" placeholder="Pesquisar..." oninput="Pages.entrevistas.search(this.value)" /></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Colaborador</th><th>Data</th><th>Motivo</th><th>Plano de Ação</th><th>Status</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="entrevistas-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-pagination" id="entrevistas-pagination"></div>
+      </div>
+    </section>
+
+    <!-- ========== MEDIDAS DISCIPLINARES ========== -->
+    <section id="page-medidas" class="page">
+      <div class="page-header">
+        <div><h2>Medidas Disciplinares</h2><p>Registro de advertências e ações disciplinares</p></div>
+        <button class="btn btn-primary" onclick="Modals.openMedida()"><i class="fa-solid fa-plus"></i> Nova Medida</button>
+      </div>
+
+      <div class="filter-bar">
+        <label><i class="fa-solid fa-filter"></i></label>
+        <input type="date" id="m-dt-ini" /><input type="date" id="m-dt-fim" />
+        <select id="m-tipo"><option value="">Todos os tipos</option><option>Advertência Verbal</option><option>Advertência Escrita</option><option>Suspensão</option></select>
+        <input type="text" id="m-colab" placeholder="Colaborador..." />
+        <button class="btn btn-secondary btn-sm" onclick="Pages.medidas.load()"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#FFFBEB;color:#F59E0B"><i class="fa-solid fa-comment-slash"></i></div>
+          <div><div class="stat-mini-val" id="m-verbais">0</div><div class="stat-mini-label">Advertências Verbais</div></div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#FFF7ED;color:#F97316"><i class="fa-solid fa-file-pen"></i></div>
+          <div><div class="stat-mini-val" id="m-escritas">0</div><div class="stat-mini-label">Advertências Escritas</div></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-line"></i> Evolução Mensal</h3>
+          <div class="chart-wrap"><canvas id="chart-med-evolucao"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-ranking-star"></i> Ranking de Colaboradores</h3>
+          <div class="chart-wrap"><canvas id="chart-med-ranking"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3><i class="fa-solid fa-table"></i> Registros</h3>
+          <div class="search-wrap"><i class="fa-solid fa-search"></i><input type="text" class="search-input" id="medidas-search" placeholder="Pesquisar..." oninput="Pages.medidas.search(this.value)" /></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Colaborador</th><th>Data</th><th>Tipo</th><th>Motivo</th><th>Ações</th></tr></thead>
+            <tbody id="medidas-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-pagination" id="medidas-pagination"></div>
+      </div>
+    </section>
+
+    <!-- ========== SUSPENSÕES ========== -->
+    <section id="page-suspensoes" class="page">
+      <div class="page-header">
+        <div><h2>Suspensões</h2><p>Controle de suspensões disciplinares</p></div>
+        <button class="btn btn-primary" onclick="Modals.openSuspensao()"><i class="fa-solid fa-plus"></i> Nova Suspensão</button>
+      </div>
+
+      <div class="filter-bar">
+        <label><i class="fa-solid fa-filter"></i></label>
+        <input type="date" id="s-dt-ini" /><input type="date" id="s-dt-fim" />
+        <input type="text" id="s-colab" placeholder="Colaborador..." />
+        <button class="btn btn-secondary btn-sm" onclick="Pages.suspensoes.load()"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#FEF2F2;color:#EF4444"><i class="fa-solid fa-ban"></i></div>
+          <div><div class="stat-mini-val" id="s-total">0</div><div class="stat-mini-label">Total de Suspensões</div></div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#FFF3F0;color:#EE4D2D"><i class="fa-solid fa-calendar-days"></i></div>
+          <div><div class="stat-mini-val" id="s-dias">0</div><div class="stat-mini-label">Total de Dias</div></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-line"></i> Evolução Mensal</h3>
+          <div class="chart-wrap"><canvas id="chart-susp-evolucao"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-ranking-star"></i> Ranking de Colaboradores</h3>
+          <div class="chart-wrap"><canvas id="chart-susp-ranking"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3><i class="fa-solid fa-table"></i> Registros</h3>
+          <div class="search-wrap"><i class="fa-solid fa-search"></i><input type="text" class="search-input" id="suspensoes-search" placeholder="Pesquisar..." oninput="Pages.suspensoes.search(this.value)" /></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Colaborador</th><th>Dias</th><th>Data</th><th>Motivo</th><th>Ações</th></tr></thead>
+            <tbody id="suspensoes-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-pagination" id="suspensoes-pagination"></div>
+      </div>
+    </section>
+
+    <!-- ========== SINERGIA ========== -->
+    <section id="page-sinergia" class="page">
+      <div class="page-header">
+        <div><h2>Sinergia S1 / S2</h2><p>Categorização e acompanhamento de performance</p></div>
+        <button class="btn btn-primary" onclick="Modals.openSinergia()"><i class="fa-solid fa-plus"></i> Adicionar Colaborador</button>
+      </div>
+
+      <div class="filter-bar">
+        <label><i class="fa-solid fa-filter"></i></label>
+        <input type="date" id="sin-dt-ini" /><input type="date" id="sin-dt-fim" />
+        <select id="sin-cat"><option value="">Todas as categorias</option><option>S1</option><option>S2</option></select>
+        <button class="btn btn-secondary btn-sm" onclick="Pages.sinergia.load()"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#ECFDF5;color:#10B981"><i class="fa-solid fa-star"></i></div>
+          <div><div class="stat-mini-val" id="sin-total-s1">0</div><div class="stat-mini-label">Total S1</div></div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-icon" style="background:#FFFBEB;color:#F59E0B"><i class="fa-solid fa-star-half-stroke"></i></div>
+          <div><div class="stat-mini-val" id="sin-total-s2">0</div><div class="stat-mini-label">Total S2</div></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-line"></i> Evolução Mensal</h3>
+          <div class="chart-wrap"><canvas id="chart-sin-evolucao"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3><i class="fa-solid fa-chart-pie"></i> Distribuição S1 x S2</h3>
+          <div class="chart-wrap"><canvas id="chart-sin-dist"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3><i class="fa-solid fa-table"></i> Registros</h3>
+          <div class="search-wrap"><i class="fa-solid fa-search"></i><input type="text" class="search-input" id="sinergia-search" placeholder="Pesquisar..." oninput="Pages.sinergia.search(this.value)" /></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Colaborador</th><th>Categoria</th><th>Data Entrada</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="sinergia-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-pagination" id="sinergia-pagination"></div>
+      </div>
+    </section>
+
+    <!-- ========== COLABORADORES ========== -->
+    <section id="page-colaboradores" class="page">
+      <div class="page-header">
+        <div><h2>Colaboradores</h2><p>Gestão do quadro de funcionários</p></div>
+        <button class="btn btn-primary" onclick="Modals.openColaborador()"><i class="fa-solid fa-plus"></i> Novo Colaborador</button>
+      </div>
+
+      <div class="filter-bar">
+        <label><i class="fa-solid fa-filter"></i></label>
+        <select id="col-status"><option value="">Todos os status</option><option>Ativo</option><option>Inativo</option><option>Afastado</option></select>
+        <input type="text" id="col-cargo" placeholder="Cargo..." />
+        <input type="text" id="col-gestor" placeholder="Gestor..." />
+        <button class="btn btn-secondary btn-sm" onclick="Pages.colaboradores.load()"><i class="fa-solid fa-rotate-right"></i></button>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3><i class="fa-solid fa-table"></i> Colaboradores</h3>
+          <div class="table-actions">
+            <div class="search-wrap"><i class="fa-solid fa-search"></i><input type="text" class="search-input" id="colab-search" placeholder="Pesquisar..." oninput="Pages.colaboradores.search(this.value)" /></div>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Nome</th><th>Matrícula</th><th>Cargo</th><th>Gestor</th>
+              <th>Admissão</th><th>Status</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="colaboradores-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-pagination" id="colaboradores-pagination"></div>
+      </div>
+    </section>
+
+    <!-- ========== CONFIGURAÇÕES ========== -->
+    <section id="page-configuracoes" class="page">
+      <div class="page-header">
+        <div><h2>Configurações</h2><p>Personalização do sistema</p></div>
+      </div>
+
+      <div class="config-section">
+        <h3>Aparência</h3>
+        <div class="config-grid">
+          <div class="config-card">
+            <h4><i class="fa-solid fa-moon" style="color:var(--shopee-orange);margin-right:8px"></i>Tema</h4>
+            <div class="toggle-row">
+              <span class="toggle-label">Modo Escuro</span>
+              <div class="toggle" id="dark-mode-toggle" onclick="App.toggleDark()"></div>
+            </div>
+          </div>
+          <div class="config-card">
+            <h4><i class="fa-solid fa-sidebar" style="color:var(--shopee-orange);margin-right:8px"></i>Sidebar</h4>
+            <div class="toggle-row">
+              <span class="toggle-label">Sidebar Recolhida</span>
+              <div class="toggle" id="sidebar-toggle-cfg" onclick="App.toggleSidebar()"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <h3>Conta</h3>
+        <div class="config-grid">
+          <div class="config-card">
+            <h4>Informações de Acesso</h4>
+            <div class="field"><label>E-mail</label><input type="email" id="cfg-email" /></div>
+            <div class="field"><label>Nome</label><input type="text" id="cfg-name" /></div>
+            <div class="field"><label>Nova Senha</label><input type="password" placeholder="Deixe em branco para manter" /></div>
+            <button class="btn btn-primary btn-sm" onclick="App.saveConfig()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+          </div>
+          <div class="config-card">
+            <h4><i class="fa-solid fa-database" style="color:var(--shopee-orange);margin-right:8px"></i>Firebase</h4>
+            <div class="field"><label>Database URL</label><input type="text" value="https://teste-ff843-default-rtdb.firebaseio.com" readonly /></div>
+            <div class="toggle-row">
+              <span class="toggle-label">Sincronização em Tempo Real</span>
+              <div class="toggle on"></div>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label">Notificações Automáticas</span>
+              <div class="toggle on"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ====== MODALS ====== -->
+
+<!-- Modal: Ocorrência -->
+<div class="modal-overlay" id="modal-ocorrencia">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-ocorrencia-title">Adicionar Ocorrência</h3>
+      <button class="modal-close" onclick="Modals.close('modal-ocorrencia')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ocorrencia-id" />
+      <div class="field"><label>Colaborador *</label><select id="ocorrencia-colaborador"></select></div>
+      <div class="field-row">
+        <div class="field"><label>Data *</label><input type="date" id="ocorrencia-data" /></div>
+        <div class="field"><label>Tipo *</label>
+          <select id="ocorrencia-tipo">
+            <option>Falta</option><option>Atestado</option><option>Afastamento</option>
+            <option>Advertência Verbal</option><option>Advertência Escrita</option><option>Suspensão</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Observação</label><textarea id="ocorrencia-obs" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modals.close('modal-ocorrencia')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Modals.saveOcorrencia()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Falta/Atestado -->
+<div class="modal-overlay" id="modal-falta">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-falta-title">Adicionar Falta/Atestado</h3>
+      <button class="modal-close" onclick="Modals.close('modal-falta')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="falta-id" />
+      <div class="field"><label>Colaborador *</label><select id="falta-colaborador"></select></div>
+      <div class="field-row">
+        <div class="field"><label>Data *</label><input type="date" id="falta-data" /></div>
+        <div class="field"><label>Tipo *</label>
+          <select id="falta-tipo"><option>Falta</option><option>Atestado</option><option>Afastamento</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Observação</label><textarea id="falta-obs" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modals.close('modal-falta')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Modals.saveFalta()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Entrevista -->
+<div class="modal-overlay" id="modal-entrevista">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-entrevista-title">Registrar Entrevista ABS</h3>
+      <button class="modal-close" onclick="Modals.close('modal-entrevista')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="entrevista-id" />
+      <div class="field"><label>Colaborador *</label><select id="entrevista-colaborador"></select></div>
+      <div class="field-row">
+        <div class="field"><label>Data *</label><input type="date" id="entrevista-data" /></div>
+        <div class="field"><label>Status *</label>
+          <select id="entrevista-status"><option>Realizada</option><option>Pendente</option><option>Agendada</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Motivo</label><input type="text" id="entrevista-motivo" placeholder="Ex: Falta injustificada, Atestado..." /></div>
+      <div class="field"><label>Plano de Ação</label><textarea id="entrevista-plano" rows="3" placeholder="Descreva o plano de ação acordado..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modals.close('modal-entrevista')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Modals.saveEntrevista()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Medida Disciplinar -->
+<div class="modal-overlay" id="modal-medida">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-medida-title">Nova Medida Disciplinar</h3>
+      <button class="modal-close" onclick="Modals.close('modal-medida')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="medida-id" />
+      <div class="field"><label>Colaborador *</label><select id="medida-colaborador"></select></div>
+      <div class="field-row">
+        <div class="field"><label>Data *</label><input type="date" id="medida-data" /></div>
+        <div class="field"><label>Tipo *</label>
+          <select id="medida-tipo"><option>Advertência Verbal</option><option>Advertência Escrita</option><option>Suspensão</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Motivo</label><input type="text" id="medida-motivo" /></div>
+      <div class="field"><label>Observação</label><textarea id="medida-obs" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modals.close('modal-medida')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Modals.saveMedida()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Suspensão -->
+<div class="modal-overlay" id="modal-suspensao">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-suspensao-title">Nova Suspensão</h3>
+      <button class="modal-close" onclick="Modals.close('modal-suspensao')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="suspensao-id" />
+      <div class="field"><label>Colaborador *</label><select id="suspensao-colaborador"></select></div>
+      <div class="field-row">
+        <div class="field"><label>Data *</label><input type="date" id="suspensao-data" /></div>
+        <div class="field"><label>Dias *</label><input type="number" id="suspensao-dias" min="1" max="30" value="1" /></div>
+      </div>
+      <div class="field"><label>Motivo</label><input type="text" id="suspensao-motivo" /></div>
+      <div class="field"><label>Observação</label><textarea id="suspensao-obs" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modals.close('modal-suspensao')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Modals.saveSuspensao()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Sinergia -->
+<div class="modal-overlay" id="modal-sinergia">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-sinergia-title">Adicionar Colaborador à Sinergia</h3>
+      <button class="modal-close" onclick="Modals.close('modal-sinergia')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sinergia-id" />
+      <div class="field"><label>Colaborador *</label><select id="sinergia-colaborador"></select></div>
+      <div class="field-row">
+        <div class="field"><label>Categoria *</label>
+          <select id="sinergia-categoria"><option>S1</option><option>S2</option></select>
+        </div>
+        <div class="field"><label>Data de Entrada *</label><input type="date" id="sinergia-data" /></div>
+      </div>
+      <div class="field"><label>Status</label>
+        <select id="sinergia-status"><option>Ativo</option><option>Concluído</option><option>Em andamento</option></select>
+      </div>
+      <div class="field"><label>Observação</label><textarea id="sinergia-obs" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modals.close('modal-sinergia')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Modals.saveSinergia()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Colaborador -->
+<div class="modal-overlay" id="modal-colaborador">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-colaborador-title">Novo Colaborador</h3>
+      <button class="modal-close" onclick="Modals.close('modal-colaborador')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="colaborador-id" />
+      <div class="field-row">
+        <div class="field"><label>Nome Completo *</label><input type="text" id="col-nome" /></div>
+        <div class="field"><label>Matrícula *</label><input type="text" id="col-matricula" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Data de Admissão *</label><input type="date" id="col-admissao" /></div>
+        <div class="field"><label>Cargo</label><input type="text" id="col-cargo-input" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Gestor</label><input type="text" id="col-gestor-input" /></div>
+        <div class="field"><label>Status</label>
+          <select id="col-status-input"><option>Ativo</option><option>Inativo</option><option>Afastado</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modals.close('modal-colaborador')">Cancelar</button>
+      <button class="btn btn-primary" onclick="Modals.saveColaborador()"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Exclusão -->
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h3>Confirmar Exclusão</h3>
+      <button class="modal-close" onclick="Modals.close('modal-confirm')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--gray-600);font-size:14px;">Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="Modals.close('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-delete-btn"><i class="fa-solid fa-trash"></i> Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay"><div class="spinner"></div></div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="firebase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
