@@ -464,7 +464,12 @@ body {
   flex-wrap: wrap;
   gap: 12px;
   box-shadow: var(--shadow);
+  position: sticky;
+  top: var(--header-height);
+  z-index: 50;
 }
+
+[data-theme="dark"] .filter-bar { background: var(--gray-50); border-color: var(--gray-200); }
 
 .filter-bar label { font-size: 12px; font-weight: 600; color: var(--gray-500); white-space: nowrap; }
 
@@ -478,9 +483,12 @@ body {
   color: var(--gray-700);
   background: var(--gray-50);
   outline: none;
-  min-width: 140px;
-  transition: border-color var(--transition);
+  min-width: 120px;
+  transition: all var(--transition);
 }
+
+[data-theme="dark"] .filter-bar select,
+[data-theme="dark"] .filter-bar input { background: var(--gray-100); color: var(--gray-800); }
 
 .filter-bar select:focus,
 .filter-bar input:focus { border-color: var(--shopee-orange); }
