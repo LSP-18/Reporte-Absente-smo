@@ -64,6 +64,7 @@ const DataAdapter = {
           observacao: doc.observacao || '',
           status: doc.status || 'Pendente',
           leader: doc.leader || '',
+          turno: doc.turno || '',
           employeeCode: doc.employeeCode || ''
         });
       });
@@ -80,6 +81,7 @@ const DataAdapter = {
           observacao: doc.observacao || '',
           status: doc.status || 'Pendente',
           leader: doc.leader || '',
+          turno: doc.turno || '',
           employeeCode: doc.employeeCode || ''
         });
       });
@@ -98,6 +100,7 @@ const DataAdapter = {
       cargo: doc.cargo || '-',
       gestor: doc.gesto || doc.gestor || '-',
       admissao: doc.admissao || '',
+      turno: doc.turno || '',
       status: doc.status || 'Ativo'
     }));
   },
@@ -450,6 +453,7 @@ const App = {
     this.tables['suspensoes-tbody'] = new PaginatedTable('suspensoes-tbody', 'suspensoes-pagination');
     this.tables['sinergia-tbody'] = new PaginatedTable('sinergia-tbody', 'sinergia-pagination');
     this.tables['colaboradores-tbody'] = new PaginatedTable('colaboradores-tbody', 'colaboradores-pagination');
+    this.tables['abs-diario-tbody'] = new PaginatedTable('abs-diario-tbody', 'abs-diario-pagination');
 
     // Definir data padrão
     document.querySelectorAll('input[type=date]').forEach(el => {
@@ -498,123 +502,55 @@ const App = {
 
     // Fechar sidebar em mobile
     if (window.innerWidth <= 768) {
-      const sidebar = document.getElementById('sidebar');
-      if (sidebar) sidebar.classList.remove('mobile-open');
+      this.toggleSidebar(true);
     }
   },
 
-  toggleSidebar() {
+  toggleSidebar(close = false) {
     const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
     if (!sidebar) return;
     
-    if (window.innerWidth <= 768) {
-      sidebar.classList.toggle('mobile-open');
+    if (close) {
+      sidebar.classList.remove('collapsed');
     } else {
-      this.sidebarCollapsed = !this.sidebarCollapsed;
-      sidebar.classList.toggle('collapsed', this.sidebarCollapsed);
-      const toggle = document.getElementById('sidebar-toggle-cfg');
-      if (toggle) toggle.classList.toggle('on', this.sidebarCollapsed);
+      sidebar.classList.toggle('collapsed');
     }
   },
 
-  toggleDark(forceOn) {
-    if (forceOn === true || (!this.darkMode && forceOn !== false)) {
-      this.darkMode = true;
+  toggleDark(force = null) {
+    const isDark = force !== null ? force : localStorage.getItem('shopee_dark') !== '1';
+    const html = document.documentElement;
+    
+    if (isDark) {
+      html.setAttribute('data-theme', 'dark');
+      localStorage.setItem('shopee_dark', '1');
+      document.getElementById('dark-toggle').innerHTML = '<i class="fa-solid fa-sun"></i>';
     } else {
-      this.darkMode = false;
+      html.removeAttribute('data-theme');
+      localStorage.setItem('shopee_dark', '0');
+      document.getElementById('dark-toggle').innerHTML = '<i class="fa-solid fa-moon"></i>';
     }
-    
-    document.documentElement.setAttribute('data-theme', this.darkMode ? 'dark' : '');
-    
-    const darkToggle = document.getElementById('dark-toggle');
-    if (darkToggle) {
-      const icon = darkToggle.querySelector('i');
-      if (icon) icon.className = this.darkMode ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-    }
-    
-    const darkModeToggle = document.getElementById('dark-mode-toggle');
-    if (darkModeToggle) darkModeToggle.classList.toggle('on', this.darkMode);
-    
-    localStorage.setItem('shopee_dark', this.darkMode ? '1' : '0');
-    
-    // Redesenhar charts
-    setTimeout(() => Pages[this.currentPage]?.load(), 100);
   },
 
   startListeners() {
     const paths = ['atestados', 'admissoes', 'entrevistas_abs', 'medidas_disciplinares', 'suspensoes', 'sinergia'];
+    
     paths.forEach(path => {
-      try {
-        const id = Firebase.listen(path, () => {
-          if (this.currentPage !== 'configuracoes') {
-            Pages[this.currentPage]?.load();
-          }
-        });
-        this.listeners.push(id);
-      } catch (e) {
-        console.error(`Erro ao iniciar listener para ${path}:`, e);
-      }
+      const id = Firebase.listen(path, () => {
+        if (this.currentPage === 'dashboard') Pages.dashboard?.load();
+      }, 10000);
+      
+      this.listeners.push(id);
     });
   },
 
-  sortTable(page, field) {
-    toast(`Ordenando por ${field}`, 'info');
-  },
-
-  saveConfig() {
-    toast('Configurações salvas!', 'success');
-  },
-
-  async exportExcel() {
-    Loading.show();
-    try {
-      const page = this.currentPage;
-      const pathMap = {
-        faltas: 'atestados',
-        entrevistas: 'entrevistas_abs',
-        medidas: 'medidas_disciplinares',
-        suspensoes: 'suspensoes',
-        sinergia: 'sinergia',
-        colaboradores: 'admissoes'
-      };
-      
-      const path = pathMap[page] || 'atestados';
-      const raw = await Firebase.get(path);
-      let data = toArr(raw);
-
-      // Adaptar dados se necessário
-      if (page === 'faltas') {
-        data = DataAdapter.atestadosParaFaltas(raw);
-      } else if (page === 'colaboradores') {
-        data = DataAdapter.admissoesParaColaboradores(raw);
-      }
-
-      if (data.length === 0) {
-        toast('Nenhum dado para exportar', 'warning');
-        return;
-      }
-
-      const headers = Object.keys(data[0]).filter(k => !k.startsWith('_') && !k.includes('At'));
-      const rows = [headers, ...data.map(r => headers.map(h => r[h] || ''))];
-      const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `shopee_rh_${page}_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast('Excel exportado com sucesso!', 'success');
-    } catch (e) {
-      toast('Erro ao exportar: ' + e.message, 'error');
-    } finally {
-      Loading.hide();
-    }
+  exportExcel() {
+    toast('Funcionalidade em desenvolvimento', 'info');
   },
 
   exportPDF() {
-    window.print();
-    toast('Enviado para impressão/PDF', 'info');
+    toast('Funcionalidade em desenvolvimento', 'info');
   }
 };
 
@@ -635,7 +571,7 @@ const Modals = {
 
   async populateColaboradores() {
     try {
-      const raw = await Firebase.get('admissoes').catch(() => null);
+      const raw = await Firebase.get('colaboradores').catch(() => null);
       const cols = DataAdapter.admissoesParaColaboradores(raw).filter(c => c.status !== 'Inativo');
       const opts = cols.length
         ? cols.map(c => `<option value="${c.nome || ''}">${c.nome || 'Sem nome'}</option>`).join('')
@@ -735,6 +671,7 @@ const Modals = {
     const tipoEl = document.getElementById('falta-tipo');
     const obsEl = document.getElementById('falta-obs');
     const colab = document.getElementById('falta-colaborador');
+    const turnoEl = document.getElementById('falta-turno');
     
     if (idEl) idEl.value = id || '';
     if (titleEl) titleEl.textContent = id ? 'Editar Registro' : 'Adicionar Falta/Atestado';
@@ -743,6 +680,7 @@ const Modals = {
       if (dataEl) dataEl.value = record.data || '';
       if (tipoEl) tipoEl.value = record.tipo || 'Falta';
       if (obsEl) obsEl.value = record.observacao || '';
+      if (turnoEl) turnoEl.value = record.turno || '';
       this.open('modal-falta');
       setTimeout(() => {
         if (colab) colab.value = record.colaborador || '';
@@ -750,6 +688,7 @@ const Modals = {
     } else {
       if (dataEl) dataEl.value = new Date().toISOString().split('T')[0];
       if (obsEl) obsEl.value = '';
+      if (turnoEl) turnoEl.value = '';
       this.open('modal-falta');
     }
   },
@@ -760,6 +699,7 @@ const Modals = {
     const data = document.getElementById('falta-data')?.value;
     const tipo = document.getElementById('falta-tipo')?.value;
     const observacao = document.getElementById('falta-obs')?.value;
+    const turno = document.getElementById('falta-turno')?.value || '';
     
     if (!colaborador || !data) {
       toast('Preencha os campos obrigatórios', 'warning');
@@ -773,7 +713,7 @@ const Modals = {
 
     Loading.show();
     try {
-      const payload = { colaborador, data, tipo, observacao };
+      const payload = { colaborador, data, tipo, observacao, turno };
       if (id) {
         await Firebase.put('atestados', id, payload);
       } else {
@@ -1086,9 +1026,9 @@ const Modals = {
     try {
       const payload = { nome, matricula, cargo, gesto: gestor, admissao, status };
       if (id) {
-        await Firebase.put('admissoes', id, payload);
+        await Firebase.put('colaboradores', id, payload);
       } else {
-        await Firebase.post('admissoes', payload);
+        await Firebase.post('colaboradores', payload);
       }
       this.close('modal-colaborador');
       toast('Colaborador salvo!', 'success');
@@ -1106,11 +1046,17 @@ const Pages = {
   // Dashboard
   dashboard: {
     data: {},
-    filterData(data, dateIni, dateFim, mes, ano) {
+    filterData(data, dateIni, dateFim, mes, ano, turno) {
       if (!data || data.length === 0) return [];
       
       return data.filter(r => {
-        const rData = r.data || '';
+        let rData = r.data || '';
+        
+        // Converter data para YYYY-MM-DD se necessário
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(rData)) {
+          const [dia, m, a] = rData.split('/');
+          rData = `${a}-${m}-${dia}`;
+        }
         
         // Filtro por data inicial e final
         if (dateIni && rData < dateIni) return false;
@@ -1119,17 +1065,17 @@ const Pages = {
         // Filtro por mês e ano
         if (mes || ano) {
           try {
-            let dateStr = rData;
-            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-              const [dia, m, a] = dateStr.split('/');
-              dateStr = `${a}-${m}-${dia}`;
-            }
-            const d = new Date(dateStr + 'T00:00:00');
+            const d = new Date(rData + 'T00:00:00');
             if (!isNaN(d)) {
               if (mes && d.getMonth() + 1 !== parseInt(mes)) return false;
               if (ano && d.getFullYear() !== parseInt(ano)) return false;
             }
           } catch {}
+        }
+        
+        // Filtro por turno - Mostrar registros que correspondem ao turno OU que nao tem turno preenchido
+        if (turno) {
+          if (r.turno && r.turno !== turno) return false;
         }
         
         return true;
@@ -1160,32 +1106,63 @@ const Pages = {
         const dateFim = document.getElementById('dash-dt-fim')?.value || '';
         const mes = document.getElementById('dash-mes')?.value || '';
         const ano = document.getElementById('dash-ano')?.value || '';
+        const turno = document.getElementById('dash-turno')?.value || '';
         
-        faltasArr = this.filterData(faltasArr, dateIni, dateFim, mes, ano);
-        entrevistasArr = this.filterData(entrevistasArr, dateIni, dateFim, mes, ano);
-        medidasArr = this.filterData(medidasArr, dateIni, dateFim, mes, ano);
-        suspensoesArr = this.filterData(suspensoesArr, dateIni, dateFim, mes, ano);
+        faltasArr = this.filterData(faltasArr, dateIni, dateFim, mes, ano, turno);
+        entrevistasArr = this.filterDataByTurno(entrevistasArr, turno);
+        medidasArr = this.filterDataByTurno(medidasArr, turno);
+        suspensoesArr = this.filterDataByTurno(suspensoesArr, turno);
 
-        // Atualizar KPIs
-        document.getElementById('kpi-headcount').textContent = colaboradoresArr.length;
-        document.getElementById('kpi-abs').textContent = colaboradoresArr.length > 0 ? ((entrevistasArr.length / colaboradoresArr.length) * 100).toFixed(1) + '%' : '0%';
+        // Atualizar KPIs - FILTRAR COLABORADORES POR TURNO
+        let colaboradoresArrFiltrados = colaboradoresArr;
+        if (turno) {
+          colaboradoresArrFiltrados = colaboradoresArr.filter(c => c.turno && c.turno === turno);
+        }
+        
+        const totalColaboradores = colaboradoresArrFiltrados.length;
+        // Contar apenas Faltas, Atestados e Afastamentos como ausências
+        const totalFaltasAtestadosAfastamentos = faltasArr.filter(f => f.tipo === 'Falta' || f.tipo === 'Atestado' || f.tipo === 'Afastamento').length;
+        const totalPresentes = Math.max(0, totalColaboradores - totalFaltasAtestadosAfastamentos);
+        const absPorcentagem = totalColaboradores > 0 ? ((totalFaltasAtestadosAfastamentos / totalColaboradores) * 100).toFixed(1) : '0';
+
+        document.getElementById('kpi-headcount').textContent = totalColaboradores;
+        document.getElementById('kpi-presentes').textContent = totalPresentes;
+        document.getElementById('kpi-abs').textContent = absPorcentagem + '%';
         document.getElementById('kpi-faltas').textContent = faltasArr.filter(f => f.tipo === 'Falta').length;
         document.getElementById('kpi-atestados').textContent = faltasArr.filter(f => f.tipo === 'Atestado').length;
         document.getElementById('kpi-afastamentos').textContent = faltasArr.filter(f => f.tipo === 'Afastamento').length;
-        document.getElementById('kpi-s1').textContent = sinergiaArr.filter(s => s.categoria === 'S1').length;
-        document.getElementById('kpi-s2').textContent = sinergiaArr.filter(s => s.categoria === 'S2').length;
+        
+        // Atualizar S1 e S2 com dados filtrados por turno
+        const sinergiaArrFiltrados = turno ? sinergiaArr.filter(s => s.turno && s.turno === turno) : sinergiaArr;
+        document.getElementById('kpi-s1').textContent = sinergiaArrFiltrados.filter(s => s.categoria === 'S1').length;
+        document.getElementById('kpi-s2').textContent = sinergiaArrFiltrados.filter(s => s.categoria === 'S2').length;
         document.getElementById('kpi-advertencias').textContent = medidasArr.length;
         document.getElementById('kpi-suspensoes').textContent = suspensoesArr.length;
-        document.getElementById('kpi-turnover').textContent = '0%';
 
         // Charts
+        // Função auxiliar para calcular ABS mensal real (Faltas + Atestados)
+        const absMensalData = new Array(12).fill(0);
+        faltasArr.forEach(f => {
+          if (f.tipo === 'Falta' || f.tipo === 'Atestado') {
+            try {
+              let dateStr = f.data;
+              if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+                const [dia, mes, ano] = dateStr.split('/');
+                dateStr = `${ano}-${mes}-${dia}`;
+              }
+              const d = new Date(dateStr + 'T00:00:00');
+              if (!isNaN(d)) absMensalData[d.getMonth()]++;
+            } catch {}
+          }
+        });
+
         makeChart('chart-abs-mensal', {
           type: 'line',
           data: {
             labels: MONTHS,
             datasets: [{
-              label: 'Entrevistas ABS',
-              data: monthlyCount(entrevistasArr),
+              label: 'Ocorrências ABS (%)',
+              data: absMensalData.map(count => totalColaboradores > 0 ? ((count / totalColaboradores) * 100).toFixed(1) : 0),
               borderColor: SHOPEE,
               backgroundColor: SHOPEE + '20',
               tension: 0.4,
@@ -1302,17 +1279,114 @@ const Pages = {
             plugins: { legend: { display: false } }
           }
         });
+
+        // Renderizar tabela de ABS por dia
+        const absDiarioData = this.generateAbsDiario(faltasArr, colaboradoresArrFiltrados);
+        App.tables['abs-diario-tbody'].setData(absDiarioData, r => `
+          <tr>
+            <td><strong>${fmtDate(r.data)}</strong></td>
+            <td>${r.diaSemana}</td>
+            <td><span class="badge badge-blue">${r.total}</span></td>
+            <td><span class="badge badge-green">${r.presentes}</span></td>
+            <td><span class="badge badge-red">${r.ausentes}</span></td>
+            <td><strong style="color: ${parseFloat(r.percentual) > 20 ? '#EF4444' : '#10B981'}">${r.percentual}%</strong></td>
+          </tr>
+        `);
       } catch (e) {
         toast('Erro ao carregar dashboard: ' + e.message, 'error');
       } finally {
         Loading.hide();
       }
+    },
+    generateAbsDiario(faltasArr, colaboradoresArr) {
+      const absDiario = {};
+      
+      // Apenas contar Faltas, Atestados e Afastamentos como ausencias
+      const ausenciasValidas = faltasArr.filter(f => 
+        f.tipo === 'Falta' || f.tipo === 'Atestado' || f.tipo === 'Afastamento'
+      );
+      
+      // Inicializar com todos os colaboradores para cada data
+      ausenciasValidas.forEach(f => {
+        let dateStr = f.data;
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+          const [dia, mes, ano] = dateStr.split('/');
+          dateStr = `${ano}-${mes}-${dia}`;
+        }
+        
+        if (!absDiario[dateStr]) {
+          absDiario[dateStr] = {
+            data: dateStr,
+            total: colaboradoresArr.length,
+            ausentes: 0,
+            presentes: colaboradoresArr.length,
+            colaboradoresAusentes: new Set()
+          };
+        }
+        
+        // Contar ausentes por colaborador (apenas uma vez por colaborador por dia)
+        const colab = f.colaborador || '-';
+        if (!absDiario[dateStr].colaboradoresAusentes.has(colab)) {
+          absDiario[dateStr].colaboradoresAusentes.add(colab);
+          absDiario[dateStr].ausentes++;
+          absDiario[dateStr].presentes--;
+        }
+      });
+      
+      // Converter para array e formatar
+      return Object.values(absDiario)
+        .map(item => ({
+          data: item.data,
+          diaSemana: getDayOfWeek(new Date(item.data + 'T00:00:00')),
+          total: item.total,
+          presentes: item.presentes,
+          ausentes: item.ausentes,
+          percentual: item.total > 0 ? ((item.ausentes / item.total) * 100).toFixed(1) : '0'
+        }))
+        .sort((a, b) => new Date(b.data) - new Date(a.data));
+    },
+    filterDataByTurno(data, turno) {
+      if (!turno) return data;
+      return data.filter(r => r.turno && r.turno === turno);
+    },
+    searchAbsDiario(q) {
+      App.tables['abs-diario-tbody'].filter(q);
     }
   },
 
   // Faltas
   faltas: {
     data: [],
+    filterData(data, dateIni, dateFim, tipo, turno, colab) {
+      if (!data || data.length === 0) return [];
+      
+      return data.filter(r => {
+        let rData = r.data || '';
+        
+        // Converter data para YYYY-MM-DD se necessário
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(rData)) {
+          const [dia, m, a] = rData.split('/');
+          rData = `${a}-${m}-${dia}`;
+        }
+        
+        // Filtro por data inicial e final
+        if (dateIni && rData < dateIni) return false;
+        if (dateFim && rData > dateFim) return false;
+        
+        // Filtro por tipo
+        if (tipo && r.tipo !== tipo) return false;
+        
+        // Filtro por turno - Mostrar registros que correspondem ao turno OU que não têm turno preenchido
+        if (turno) {
+          if (r.turno && r.turno !== turno) return false;
+        }
+        
+        // Filtro por colaborador
+        if (colab && !r.colaborador.toLowerCase().includes(colab.toLowerCase())) return false;
+        
+        return true;
+      });
+    },
     async load() {
       Loading.show();
       try {
@@ -1322,9 +1396,18 @@ const Pages = {
         ]);
         this.data = DataAdapter.atestadosParaFaltas(atestados, faltas);
 
-        document.getElementById('f-total-faltas').textContent = this.data.filter(f => f.tipo === 'Falta').length;
-        document.getElementById('f-total-atestados').textContent = this.data.filter(f => f.tipo === 'Atestado').length;
-        document.getElementById('f-total-afastamentos').textContent = this.data.filter(f => f.tipo === 'Afastamento').length;
+        // Aplicar filtros
+        const dateIni = document.getElementById('f-dt-ini')?.value || '';
+        const dateFim = document.getElementById('f-dt-fim')?.value || '';
+        const tipo = document.getElementById('f-tipo')?.value || '';
+        const turno = document.getElementById('f-turno')?.value || '';
+        const colab = document.getElementById('f-colab')?.value || '';
+        
+        const filteredData = this.filterData(this.data, dateIni, dateFim, tipo, turno, colab);
+
+        document.getElementById('f-total-faltas').textContent = filteredData.filter(f => f.tipo === 'Falta').length;
+        document.getElementById('f-total-atestados').textContent = filteredData.filter(f => f.tipo === 'Atestado').length;
+        document.getElementById('f-total-afastamentos').textContent = filteredData.filter(f => f.tipo === 'Afastamento').length;
 
         makeChart('chart-faltas-evolucao', {
           type: 'line',
@@ -1332,7 +1415,7 @@ const Pages = {
             labels: MONTHS,
             datasets: [{
               label: 'Faltas',
-              data: monthlyCount(this.data),
+              data: monthlyCount(filteredData),
               borderColor: ERROR,
               backgroundColor: ERROR + '20',
               tension: 0.4,
@@ -1349,10 +1432,10 @@ const Pages = {
         makeChart('chart-faltas-top10', {
           type: 'bar',
           data: {
-            labels: rankingData(this.data, 'colaborador', 10).map(r => r[0]),
+            labels: rankingData(filteredData, 'colaborador', 10).map(r => r[0]),
             datasets: [{
               label: 'Faltas',
-              data: rankingData(this.data, 'colaborador', 10).map(r => r[1]),
+              data: rankingData(filteredData, 'colaborador', 10).map(r => r[1]),
               backgroundColor: ERROR
             }]
           },
@@ -1365,7 +1448,7 @@ const Pages = {
         });
 
         const typeBadge = { Falta: 'badge-red', Atestado: 'badge-blue', Afastamento: 'badge-purple' };
-        App.tables['faltas-tbody'].setData(this.data, r => `
+        App.tables['faltas-tbody'].setData(filteredData, r => `
           <tr>
             <td><strong>${r.colaborador || '-'}</strong></td>
             <td>${fmtDate(r.data)}</td>
@@ -1393,14 +1476,22 @@ const Pages = {
   // Entrevistas
   entrevistas: {
     data: [],
+    filterDataByTurno(data, turno) {
+      if (!turno) return data;
+      return data.filter(r => r.turno && r.turno === turno);
+    },
     async load() {
       Loading.show();
       try {
         const raw = await Firebase.get('entrevistas_abs').catch(() => null);
         this.data = DataAdapter.entrevistasParaEntrevistas(raw);
+        
+        // Aplicar filtro de turno
+        const turno = document.getElementById('dash-turno')?.value || '';
+        let filteredData = this.filterDataByTurno(this.data, turno);
 
         const statusBadge = { Pendente: 'badge-orange', Realizada: 'badge-green' };
-        App.tables['entrevistas-tbody'].setData(this.data, r => `
+        App.tables['entrevistas-tbody'].setData(filteredData, r => `
           <tr>
             <td><strong>${r.colaborador || '-'}</strong></td>
             <td>${fmtDate(r.data)}</td>
@@ -1429,14 +1520,22 @@ const Pages = {
   // Medidas Disciplinares
   medidas: {
     data: [],
+    filterDataByTurno(data, turno) {
+      if (!turno) return data;
+      return data.filter(r => r.turno && r.turno === turno);
+    },
     async load() {
       Loading.show();
       try {
         const raw = await Firebase.get('medidas_disciplinares').catch(() => null);
         this.data = DataAdapter.medidasParaMedidas(raw);
+        
+        // Aplicar filtro de turno
+        const turno = document.getElementById('dash-turno')?.value || '';
+        let filteredData = this.filterDataByTurno(this.data, turno);
 
         const typeBadge = { 'Advertência Verbal': 'badge-yellow', 'Advertência Escrita': 'badge-orange', 'Suspensão': 'badge-red' };
-        App.tables['medidas-tbody'].setData(this.data, r => `
+        App.tables['medidas-tbody'].setData(filteredData, r => `
           <tr>
             <td><strong>${r.colaborador || '-'}</strong></td>
             <td>${fmtDate(r.data)}</td>
@@ -1465,13 +1564,21 @@ const Pages = {
   // Suspensões
   suspensoes: {
     data: [],
+    filterDataByTurno(data, turno) {
+      if (!turno) return data;
+      return data.filter(r => r.turno && r.turno === turno);
+    },
     async load() {
       Loading.show();
       try {
         const raw = await Firebase.get('suspensoes').catch(() => null);
         this.data = DataAdapter.suspensoesParaSuspensoes(raw);
+        
+        // Aplicar filtro de turno
+        const turno = document.getElementById('dash-turno')?.value || '';
+        let filteredData = this.filterDataByTurno(this.data, turno);
 
-        App.tables['suspensoes-tbody'].setData(this.data, r => `
+        App.tables['suspensoes-tbody'].setData(filteredData, r => `
           <tr>
             <td><strong>${r.colaborador || '-'}</strong></td>
             <td>${fmtDate(r.data)}</td>
@@ -1500,14 +1607,22 @@ const Pages = {
   // Sinergia
   sinergia: {
     data: [],
+    filterDataByTurno(data, turno) {
+      if (!turno) return data;
+      return data.filter(r => r.turno && r.turno === turno);
+    },
     async load() {
       Loading.show();
       try {
         const raw = await Firebase.get('sinergia').catch(() => null);
         this.data = DataAdapter.sinergiaParaSinergia(raw);
+        
+        // Aplicar filtro de turno
+        const turno = document.getElementById('dash-turno')?.value || '';
+        let filteredData = this.filterDataByTurno(this.data, turno);
 
-        const s1 = this.data.filter(s => s.categoria === 'S1');
-        const s2 = this.data.filter(s => s.categoria === 'S2');
+        const s1 = filteredData.filter(s => s.categoria === 'S1');
+        const s2 = filteredData.filter(s => s.categoria === 'S2');
 
         makeChart('chart-sin-evolucao', {
           type: 'line',
@@ -1516,7 +1631,7 @@ const Pages = {
             datasets: [
               {
                 label: 'S1',
-                data: monthlyCount(this.data.filter(s => s.categoria === 'S1'), 'data_entrada'),
+                data: monthlyCount(filteredData.filter(s => s.categoria === 'S1'), 'data_entrada'),
                 borderColor: SUCCESS,
                 backgroundColor: SUCCESS + '20',
                 tension: 0.4,
@@ -1524,7 +1639,7 @@ const Pages = {
               },
               {
                 label: 'S2',
-                data: monthlyCount(this.data.filter(s => s.categoria === 'S2'), 'data_entrada'),
+                data: monthlyCount(filteredData.filter(s => s.categoria === 'S2'), 'data_entrada'),
                 borderColor: WARN,
                 backgroundColor: WARN + '20',
                 tension: 0.4,
@@ -1557,7 +1672,7 @@ const Pages = {
 
         const catBadge = { S1: 'badge-green', S2: 'badge-yellow' };
         const stsBadge = { Ativo: 'badge-green', Concluído: 'badge-blue', 'Em andamento': 'badge-orange' };
-        App.tables['sinergia-tbody'].setData(this.data, r => `
+        App.tables['sinergia-tbody'].setData(filteredData, r => `
           <tr>
             <td><strong>${r.colaborador || '-'}</strong></td>
             <td><span class="badge ${catBadge[r.categoria] || 'badge-gray'}">${r.categoria || '-'}</span></td>
@@ -1640,13 +1755,30 @@ const Pages = {
   }
 };
 
+// ====== FUNCOES AUXILIARES PARA ABS DIARIO ======
+function getDayOfWeek(date) {
+  const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  return days[date.getDay()];
+}
+
 // ====== EVENT LISTENERS ======
 // Listeners para filtros do dashboard
 setTimeout(() => {
-  ['dash-dt-ini', 'dash-dt-fim', 'dash-mes', 'dash-ano'].forEach(id => {
+  ['dash-dt-ini', 'dash-dt-fim', 'dash-mes', 'dash-ano', 'dash-turno'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('change', () => Pages.dashboard?.load());
+    }
+  });
+}, 100);
+
+// Listeners para filtros de faltas
+setTimeout(() => {
+  ['f-dt-ini', 'f-dt-fim', 'f-tipo', 'f-turno', 'f-colab'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('change', () => Pages.faltas?.load());
+      el.addEventListener('input', () => Pages.faltas?.load());
     }
   });
 }, 100);
