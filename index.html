@@ -48,8 +48,8 @@
     <div class="sidebar-header">
       <div class="sidebar-logo"><i class="fa-solid fa-bag-shopping"></i></div>
       <div class="sidebar-brand">
-        <h2>Controle Carandiru LSP-18</h2>
-        <span>Dashboard MANU</span>
+        <h2>Controle LSP-18</h2>
+        <span>Carandiru</span>
       </div>
     </div>
 
@@ -160,6 +160,11 @@
           <option value="2025">2025</option>
           <option value="2026" selected>2026</option>
         </select>
+        <select id="dash-turno">
+          <option value="">Todos os turnos</option>
+          <option value="AM">AM (Manhã)</option>
+          <option value="PM">PM (Tarde)</option>
+        </select>
         <button class="btn btn-secondary btn-sm" onclick="Pages.dashboard.load()">
           <i class="fa-solid fa-rotate-right"></i> Atualizar
         </button>
@@ -171,6 +176,11 @@
           <div class="card-icon"><i class="fa-solid fa-users"></i></div>
           <div class="card-value" id="kpi-headcount">0</div>
           <div class="card-label">Colaboradores Total</div>
+        </div>
+        <div class="card" style="--card-accent:#10B981;--card-icon-bg:#ECFDF5;--card-icon-color:#10B981">
+          <div class="card-icon"><i class="fa-solid fa-user-check"></i></div>
+          <div class="card-value" id="kpi-presentes">0</div>
+          <div class="card-label">Colaboradores Presentes</div>
         </div>
         <div class="card" style="--card-accent:#F59E0B;--card-icon-bg:#FFFBEB;--card-icon-color:#F59E0B">
           <div class="card-icon"><i class="fa-solid fa-percent"></i></div>
@@ -212,11 +222,7 @@
           <div class="card-value" id="kpi-suspensoes">0</div>
           <div class="card-label">Suspensões</div>
         </div>
-        <div class="card" style="--card-accent:#7C3AED;--card-icon-bg:#F5F3FF;--card-icon-color:#7C3AED">
-          <div class="card-icon"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
-          <div class="card-value" id="kpi-turnover">0%</div>
-          <div class="card-label">...</div>
-        </div>
+
       </div>
 
       <!-- Charts Row 1 -->
@@ -250,6 +256,35 @@
           <div class="chart-wrap"><canvas id="chart-rank-adv"></canvas></div>
         </div>
       </div>
+
+      <!-- Tabela de ABS por Dia -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3><i class="fa-solid fa-calendar-days"></i> Relatorio de ABS por Dia</h3>
+          <div class="table-actions">
+            <div class="search-wrap">
+              <i class="fa-solid fa-search"></i>
+              <input type="text" class="search-input" id="abs-diario-search" placeholder="Pesquisar por data..." oninput="Pages.dashboard.searchAbsDiario(this.value)" />
+            </div>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="abs-diario-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Dia da Semana</th>
+                <th>Total Colaboradores</th>
+                <th>Presentes</th>
+                <th>Ausentes</th>
+                <th>% ABS</th>
+              </tr>
+            </thead>
+            <tbody id="abs-diario-tbody"></tbody>
+          </table>
+        </div>
+        <div class="table-pagination" id="abs-diario-pagination"></div>
+      </div>
     </section>
 
     <!-- ========== FALTAS E ATESTADOS ========== -->
@@ -268,6 +303,7 @@
         <label><i class="fa-solid fa-filter"></i></label>
         <input type="date" id="f-dt-ini" /><input type="date" id="f-dt-fim" />
         <select id="f-tipo"><option value="">Todos os tipos</option><option>Falta</option><option>Atestado</option><option>Afastamento</option></select>
+        <select id="f-turno"><option value="">Todos os turnos</option><option value="AM">AM</option><option value="PM">PM</option></select>
         <input type="text" id="f-colab" placeholder="Colaborador..." />
         <button class="btn btn-secondary btn-sm" onclick="Pages.faltas.load()"><i class="fa-solid fa-rotate-right"></i></button>
       </div>
@@ -668,6 +704,11 @@
         <div class="field"><label>Data *</label><input type="date" id="falta-data" /></div>
         <div class="field"><label>Tipo *</label>
           <select id="falta-tipo"><option>Falta</option><option>Atestado</option><option>Afastamento</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Turno</label>
+          <select id="falta-turno"><option value="">Sem turno</option><option value="AM">AM (Manhã)</option><option value="PM">PM (Tarde)</option></select>
         </div>
       </div>
       <div class="field"><label>Observação</label><textarea id="falta-obs" rows="3"></textarea></div>
