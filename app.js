@@ -58,6 +58,7 @@ const DataAdapter = {
       Object.entries(atestados).forEach(([id, doc]) => {
         resultado.push({
           _id: id,
+          _path: 'atestados',
           colaborador: doc.employeeName || doc.colaborador || '-',
           data: this.converterData(doc.date || doc.data),
           tipo: doc.type || doc.tipo || 'Atestado',
@@ -65,7 +66,11 @@ const DataAdapter = {
           status: doc.status || 'Pendente',
           leader: doc.leader || '',
           turno: doc.turno || '',
-          employeeCode: doc.employeeCode || ''
+          employeeCode: doc.employeeCode || '',
+          entrevistaAbs: doc.entrevistaAbs || '',
+          medidasDisc: doc.medidasDisc || '',
+          atestadoBase64: doc.atestadoBase64 || '',
+          atestadoNome: doc.atestadoNome || ''
         });
       });
     }
@@ -75,6 +80,7 @@ const DataAdapter = {
       Object.entries(faltas).forEach(([id, doc]) => {
         resultado.push({
           _id: id,
+          _path: 'faltas',
           colaborador: doc.employeeName || doc.colaborador || '-',
           data: this.converterData(doc.date || doc.data),
           tipo: doc.type || doc.tipo || 'Falta',
@@ -82,7 +88,11 @@ const DataAdapter = {
           status: doc.status || 'Pendente',
           leader: doc.leader || '',
           turno: doc.turno || '',
-          employeeCode: doc.employeeCode || ''
+          employeeCode: doc.employeeCode || '',
+          entrevistaAbs: doc.entrevistaAbs || '',
+          medidasDisc: doc.medidasDisc || '',
+          atestadoBase64: doc.atestadoBase64 || '',
+          atestadoNome: doc.atestadoNome || ''
         });
       });
     }
@@ -484,7 +494,7 @@ const App = {
     if (navEl) navEl.classList.add('active');
     
     const titles = {
-      dashboard: 'Dashboard Executivo',
+      dashboard: 'Visão Geral ',
       faltas: 'Faltas e Atestados',
       entrevistas: 'Entrevistas ABS',
       medidas: 'Medidas Disciplinares',
@@ -510,11 +520,28 @@ const App = {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     if (!sidebar) return;
-    
-    if (close) {
-      sidebar.classList.remove('collapsed');
+
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+      // Mobile: desliza para dentro/fora com classe mobile-open
+      if (close) {
+        sidebar.classList.remove('mobile-open');
+        if (overlay) overlay.classList.remove('visible');
+      } else {
+        sidebar.classList.toggle('mobile-open');
+        if (overlay) overlay.classList.toggle('visible', sidebar.classList.contains('mobile-open'));
+      }
     } else {
-      sidebar.classList.toggle('collapsed');
+      // Desktop: recolhe/expande com classe collapsed
+      if (close) {
+        sidebar.classList.remove('collapsed');
+      } else {
+        sidebar.classList.toggle('collapsed');
+      }
+      // Atualiza toggle de config se existir
+      const cfgToggle = document.getElementById('sidebar-toggle-cfg');
+      if (cfgToggle) cfgToggle.classList.toggle('on', sidebar.classList.contains('collapsed'));
     }
   },
 
@@ -664,7 +691,7 @@ const Modals = {
   },
 
   // ---- Falta ----
-  openFalta(id, record) {
+  openFalta(id, record, path) {
     const idEl = document.getElementById('falta-id');
     const titleEl = document.getElementById('modal-falta-title');
     const dataEl = document.getElementById('falta-data');
@@ -672,8 +699,10 @@ const Modals = {
     const obsEl = document.getElementById('falta-obs');
     const colab = document.getElementById('falta-colaborador');
     const turnoEl = document.getElementById('falta-turno');
+    const pathEl = document.getElementById('falta-path');
     
     if (idEl) idEl.value = id || '';
+    if (pathEl) pathEl.value = path || 'atestados';
     if (titleEl) titleEl.textContent = id ? 'Editar Registro' : 'Adicionar Falta/Atestado';
     
     if (record) {
@@ -681,6 +710,26 @@ const Modals = {
       if (tipoEl) tipoEl.value = record.tipo || 'Falta';
       if (obsEl) obsEl.value = record.observacao || '';
       if (turnoEl) turnoEl.value = record.turno || '';
+      // Restore YN fields
+      this._restoreYN('falta-entrevista-abs', record.entrevistaAbs || '');
+      this._restoreYN('falta-medidas-disc', record.medidasDisc || '');
+      // Restore attachment
+      const b64 = record.atestadoBase64 || '';
+      const nome = record.atestadoNome || '';
+      document.getElementById('falta-atestado-base64').value = b64;
+      document.getElementById('falta-atestado-nome').value = nome;
+      const preview = document.getElementById('falta-atestado-preview');
+      if (b64 && nome) {
+        preview.style.display = 'flex';
+        const isImg = b64.startsWith('data:image');
+        preview.innerHTML = isImg
+          ? `<img src="${b64}" class="atestado-thumb" /><span class="atestado-filename"><i class="fa-solid fa-file-image"></i> ${nome}</span><button type="button" class="atestado-remove" onclick="Modals.removeAtestado()"><i class="fa-solid fa-xmark"></i></button>`
+          : `<span class="atestado-filename"><i class="fa-solid fa-file-pdf"></i> ${nome}</span><button type="button" class="atestado-remove" onclick="Modals.removeAtestado()"><i class="fa-solid fa-xmark"></i></button>`;
+        document.getElementById('falta-upload-text').innerHTML = 'Arquivo selecionado';
+      } else {
+        preview.style.display = 'none';
+        document.getElementById('falta-upload-text').innerHTML = 'Clique para selecionar ou arraste um arquivo<br><small>PDF, JPG, PNG — máx. 5 MB</small>';
+      }
       this.open('modal-falta');
       setTimeout(() => {
         if (colab) colab.value = record.colaborador || '';
@@ -689,17 +738,35 @@ const Modals = {
       if (dataEl) dataEl.value = new Date().toISOString().split('T')[0];
       if (obsEl) obsEl.value = '';
       if (turnoEl) turnoEl.value = '';
+      this._restoreYN('falta-entrevista-abs', '');
+      this._restoreYN('falta-medidas-disc', '');
+      this.removeAtestado();
       this.open('modal-falta');
     }
   },
 
+  _restoreYN(fieldId, val) {
+    const hidden = document.getElementById(fieldId);
+    const group = document.getElementById(fieldId + '-group');
+    if (!hidden || !group) return;
+    hidden.value = val;
+    group.querySelectorAll('.yn-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.val === val);
+    });
+  },
+
   async saveFalta() {
     const id = document.getElementById('falta-id')?.value;
+    const path = document.getElementById('falta-path')?.value || 'atestados';
     const colaborador = document.getElementById('falta-colaborador')?.value;
     const data = document.getElementById('falta-data')?.value;
     const tipo = document.getElementById('falta-tipo')?.value;
     const observacao = document.getElementById('falta-obs')?.value;
     const turno = document.getElementById('falta-turno')?.value || '';
+    const entrevistaAbs = document.getElementById('falta-entrevista-abs')?.value || '';
+    const medidasDisc = document.getElementById('falta-medidas-disc')?.value || '';
+    const atestadoBase64 = document.getElementById('falta-atestado-base64')?.value || '';
+    const atestadoNome = document.getElementById('falta-atestado-nome')?.value || '';
     
     if (!colaborador || !data) {
       toast('Preencha os campos obrigatórios', 'warning');
@@ -713,9 +780,9 @@ const Modals = {
 
     Loading.show();
     try {
-      const payload = { colaborador, data, tipo, observacao, turno };
+      const payload = { colaborador, data, tipo, observacao, turno, entrevistaAbs, medidasDisc, atestadoBase64, atestadoNome };
       if (id) {
-        await Firebase.put('atestados', id, payload);
+        await Firebase.put(path, id, payload);
       } else {
         await Firebase.post('atestados', payload);
       }
@@ -727,6 +794,54 @@ const Modals = {
     } finally {
       Loading.hide();
     }
+  },
+
+  toggleYN(fieldId, val) {
+    const hidden = document.getElementById(fieldId);
+    const group = document.getElementById(fieldId + '-group');
+    if (!hidden || !group) return;
+    const current = hidden.value;
+    // toggle off if same
+    if (current === val) {
+      hidden.value = '';
+      group.querySelectorAll('.yn-btn').forEach(b => b.classList.remove('active'));
+    } else {
+      hidden.value = val;
+      group.querySelectorAll('.yn-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.val === val);
+      });
+    }
+  },
+
+  onAtestadoFileChange(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast('Arquivo muito grande. Máximo 5 MB.', 'warning');
+      input.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('falta-atestado-base64').value = e.target.result;
+      document.getElementById('falta-atestado-nome').value = file.name;
+      const preview = document.getElementById('falta-atestado-preview');
+      const isImg = file.type.startsWith('image/');
+      preview.style.display = 'flex';
+      preview.innerHTML = isImg
+        ? `<img src="${e.target.result}" class="atestado-thumb" /><span class="atestado-filename"><i class="fa-solid fa-file-image"></i> ${file.name}</span><button type="button" class="atestado-remove" onclick="Modals.removeAtestado()"><i class="fa-solid fa-xmark"></i></button>`
+        : `<span class="atestado-filename"><i class="fa-solid fa-file-pdf"></i> ${file.name}</span><button type="button" class="atestado-remove" onclick="Modals.removeAtestado()"><i class="fa-solid fa-xmark"></i></button>`;
+      document.getElementById('falta-upload-text').innerHTML = 'Arquivo selecionado';
+    };
+    reader.readAsDataURL(file);
+  },
+
+  removeAtestado() {
+    document.getElementById('falta-atestado-base64').value = '';
+    document.getElementById('falta-atestado-nome').value = '';
+    document.getElementById('falta-atestado-file').value = '';
+    document.getElementById('falta-atestado-preview').style.display = 'none';
+    document.getElementById('falta-upload-text').innerHTML = 'Clique para selecionar ou arraste um arquivo<br><small>PDF, JPG, PNG — máx. 5 MB</small>';
   },
 
   // ---- Entrevista ----
@@ -1219,7 +1334,7 @@ const Pages = {
         });
 
         makeChart('chart-semanal', {
-          type: 'area',
+          type: 'line',
           data: {
             labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'],
             datasets: [{
@@ -1448,20 +1563,32 @@ const Pages = {
         });
 
         const typeBadge = { Falta: 'badge-red', Atestado: 'badge-blue', Afastamento: 'badge-purple' };
-        App.tables['faltas-tbody'].setData(filteredData, r => `
+        App.tables['faltas-tbody'].setData(filteredData, r => {
+          const ynBadge = v => v === 'sim'
+            ? '<span class="badge badge-green"><i class="fa-solid fa-check"></i> Sim</span>'
+            : v === 'nao'
+            ? '<span class="badge badge-red"><i class="fa-solid fa-xmark"></i> Não</span>'
+            : '<span class="badge badge-gray">—</span>';
+          const anexoBadge = r.atestadoBase64
+            ? `<a href="${r.atestadoBase64}" download="${r.atestadoNome || 'atestado'}" class="badge badge-blue" title="Baixar ${r.atestadoNome || 'atestado'}"><i class="fa-solid fa-paperclip"></i> Ver</a>`
+            : '<span class="badge badge-gray">—</span>';
+          return `
           <tr>
             <td><strong>${r.colaborador || '-'}</strong></td>
             <td>${fmtDate(r.data)}</td>
             <td><span class="badge ${typeBadge[r.tipo] || 'badge-gray'}">${r.tipo || '-'}</span></td>
+            <td>${ynBadge(r.entrevistaAbs)}</td>
+            <td>${ynBadge(r.medidasDisc)}</td>
+            <td>${anexoBadge}</td>
             <td>${r.observacao || '-'}</td>
             <td>
               <div class="action-btns">
-                <button class="btn-edit" onclick="Modals.openFalta('${r._id}', ${JSON.stringify(r).replace(/"/g, '&quot;')})" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-del" onclick="Modals.confirmDelete('atestados','${r._id}',()=>Pages.faltas.load())" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn-edit" onclick="Modals.openFalta('${r._id}', ${JSON.stringify(r).replace(/"/g, '&quot;')}, '${r._path || 'atestados'}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-del" onclick="Modals.confirmDelete('${r._path || 'atestados'}','${r._id}',()=>Pages.faltas.load())" title="Excluir"><i class="fa-solid fa-trash"></i></button>
               </div>
             </td>
           </tr>
-        `);
+        `});
       } catch (e) {
         toast('Erro: ' + e.message, 'error');
       } finally {
@@ -1564,6 +1691,25 @@ const Pages = {
   // Suspensões
   suspensoes: {
     data: [],
+    filterData(data, dateIni, dateFim) {
+      if (!data || data.length === 0) return [];
+      
+      return data.filter(r => {
+        let rData = r.data || '';
+        
+        // Converter data para YYYY-MM-DD se necessário
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(rData)) {
+          const [dia, m, a] = rData.split('/');
+          rData = `${a}-${m}-${dia}`;
+        }
+        
+        // Filtro por data inicial e final
+        if (dateIni && rData < dateIni) return false;
+        if (dateFim && rData > dateFim) return false;
+        
+        return true;
+      });
+    },
     filterDataByTurno(data, turno) {
       if (!turno) return data;
       return data.filter(r => r.turno && r.turno === turno);
@@ -1577,6 +1723,46 @@ const Pages = {
         // Aplicar filtro de turno
         const turno = document.getElementById('dash-turno')?.value || '';
         let filteredData = this.filterDataByTurno(this.data, turno);
+
+        // Gráfico de evolução mensal
+        makeChart('chart-susp-evolucao', {
+          type: 'line',
+          data: {
+            labels: MONTHS,
+            datasets: [{
+              label: 'Suspensões',
+              data: monthlyCount(filteredData),
+              borderColor: ERROR,
+              backgroundColor: ERROR + '20',
+              tension: 0.4,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: true } }
+          }
+        });
+
+        // Gráfico de ranking
+        makeChart('chart-susp-ranking', {
+          type: 'bar',
+          data: {
+            labels: rankingData(filteredData, 'colaborador', 5).map(r => r[0]),
+            datasets: [{
+              label: 'Suspensões',
+              data: rankingData(filteredData, 'colaborador', 5).map(r => r[1]),
+              backgroundColor: ERROR
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+          }
+        });
 
         App.tables['suspensoes-tbody'].setData(filteredData, r => `
           <tr>
@@ -1753,6 +1939,60 @@ const Pages = {
       }
     }
   }
+};
+
+// Adicionar método saveConfig ao objeto App
+App.saveConfig = function() {
+    const email = document.getElementById('cfg-email')?.value.trim();
+    const name = document.getElementById('cfg-name')?.value.trim();
+    const newPassword = document.querySelector('input[type="password"][placeholder="Deixe em branco para manter"]')?.value.trim();
+    
+    if (!email || !name) {
+      toast('Preencha os campos obrigatórios', 'warning');
+      return;
+    }
+    
+    if (!isValidEmail(email)) {
+      toast('Email inválido', 'warning');
+      return;
+    }
+    
+    Loading.show();
+    try {
+      const user = Auth.getCurrentUser();
+      if (!user) {
+        toast('Usuário não autenticado', 'error');
+        return;
+      }
+      
+      // Atualizar dados do usuário no localStorage
+      const users = Auth.getUsers();
+      const userIndex = users.findIndex(u => u.email === user.email);
+      
+      if (userIndex >= 0) {
+        users[userIndex].email = email;
+        users[userIndex].name = name;
+        if (newPassword) {
+          users[userIndex].password = newPassword;
+        }
+        localStorage.setItem(Auth.USERS_KEY, JSON.stringify(users));
+        
+        // Atualizar sessão
+        const updatedSession = {
+          ...users[userIndex],
+          loginAt: new Date().toISOString(),
+          loginAtTimestamp: Date.now()
+        };
+        localStorage.setItem(Auth.SESSION_KEY, JSON.stringify(updatedSession));
+        
+        toast('Configurações salvas com sucesso!', 'success');
+        Pages.configuracoes.load();
+      }
+    } catch (e) {
+      toast('Erro ao salvar configurações: ' + e.message, 'error');
+    } finally {
+      Loading.hide();
+    }
 };
 
 // ====== FUNCOES AUXILIARES PARA ABS DIARIO ======
