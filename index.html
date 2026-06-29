@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Manu</title>
+  <title>Performance ABS</title>
+      <link rel="icon" href="https://static.vecteezy.com/system/resources/thumbnails/053/407/516/small/shopee-logo-shopee-icon-transparent-social-media-icons-free-png.png">
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
@@ -14,8 +15,8 @@
   <div class="login-card">
     <div class="login-logo">
       <div class="logo-icon"><i class="fa-solid fa-bag-shopping"></i></div>
-      <h1>Controle Carandiru LSP-18</h1>
-      <p>Dashboard de Recursos Humanos</p>
+      <h1>Central de Performance</h1>
+      <p>Carandiru LSP-18 </p>
     </div>
     <div class="form-group">
       <label>E-mail</label>
@@ -41,15 +42,15 @@
 <div id="app">
 
   <!-- Sidebar Overlay (mobile) -->
-  <div id="sidebar-overlay" onclick="App.toggleSidebar()"></div>
+  <div id="sidebar-overlay" onclick="App.toggleSidebar(true)"></div>
 
   <!-- ====== SIDEBAR ====== -->
   <nav id="sidebar">
     <div class="sidebar-header">
       <div class="sidebar-logo"><i class="fa-solid fa-bag-shopping"></i></div>
       <div class="sidebar-brand">
-        <h2>Controle LSP-18</h2>
-        <span>Carandiru</span>
+        <h2>Central de Performance</h2>
+        <span>Carandiru LSP-18</span>
       </div>
     </div>
 
@@ -132,7 +133,7 @@
     <section id="page-dashboard" class="page active">
       <div class="page-header">
         <div>
-          <h2>Dashboard Executivo</h2>
+          <h2>Visão geral </h2>
           <p>Visão geral em tempo real · Atualizado agora</p>
         </div>
         <button class="btn btn-primary" onclick="Modals.openOcorrencia()">
@@ -351,6 +352,9 @@
                 <th onclick="App.sortTable('faltas','colaborador')">Colaborador <i class="fa-solid fa-sort"></i></th>
                 <th onclick="App.sortTable('faltas','data')">Data <i class="fa-solid fa-sort"></i></th>
                 <th>Tipo</th>
+                <th>Entrevista ABS</th>
+                <th>Med. Disciplinar</th>
+                <th>Atestado</th>
                 <th>Observação</th>
                 <th>Ações</th>
               </tr>
@@ -699,6 +703,7 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="falta-id" />
+      <input type="hidden" id="falta-path" value="atestados" />
       <div class="field"><label>Colaborador *</label><select id="falta-colaborador"></select></div>
       <div class="field-row">
         <div class="field"><label>Data *</label><input type="date" id="falta-data" /></div>
@@ -710,6 +715,43 @@
         <div class="field"><label>Turno</label>
           <select id="falta-turno"><option value="">Sem turno</option><option value="AM">AM (Manhã)</option><option value="PM">PM (Tarde)</option></select>
         </div>
+      </div>
+      <div class="field-row falta-checklist-row">
+        <div class="field falta-yn-field">
+          <label><i class="fa-solid fa-comments"></i> Entrevista ABS realizada?</label>
+          <div class="yn-toggle-group" id="falta-entrevista-abs-group">
+            <button type="button" class="yn-btn yn-sim" data-val="sim" onclick="Modals.toggleYN('falta-entrevista-abs','sim')">
+              <i class="fa-solid fa-check"></i> Sim
+            </button>
+            <button type="button" class="yn-btn yn-nao" data-val="nao" onclick="Modals.toggleYN('falta-entrevista-abs','nao')">
+              <i class="fa-solid fa-xmark"></i> Não
+            </button>
+          </div>
+          <input type="hidden" id="falta-entrevista-abs" value="" />
+        </div>
+        <div class="field falta-yn-field">
+          <label><i class="fa-solid fa-gavel"></i> Medidas disciplinares?</label>
+          <div class="yn-toggle-group" id="falta-medidas-disc-group">
+            <button type="button" class="yn-btn yn-sim" data-val="sim" onclick="Modals.toggleYN('falta-medidas-disc','sim')">
+              <i class="fa-solid fa-check"></i> Sim
+            </button>
+            <button type="button" class="yn-btn yn-nao" data-val="nao" onclick="Modals.toggleYN('falta-medidas-disc','nao')">
+              <i class="fa-solid fa-xmark"></i> Não
+            </button>
+          </div>
+          <input type="hidden" id="falta-medidas-disc" value="" />
+        </div>
+      </div>
+      <div class="field falta-upload-field">
+        <label><i class="fa-solid fa-paperclip"></i> Anexar Atestado</label>
+        <div class="upload-area" id="falta-upload-area" onclick="document.getElementById('falta-atestado-file').click()">
+          <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+          <span class="upload-text" id="falta-upload-text">Clique para selecionar ou arraste um arquivo<br><small>PDF, JPG, PNG — máx. 5 MB</small></span>
+        </div>
+        <input type="file" id="falta-atestado-file" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="Modals.onAtestadoFileChange(this)" />
+        <div id="falta-atestado-preview" class="atestado-preview" style="display:none"></div>
+        <input type="hidden" id="falta-atestado-base64" value="" />
+        <input type="hidden" id="falta-atestado-nome" value="" />
       </div>
       <div class="field"><label>Observação</label><textarea id="falta-obs" rows="3"></textarea></div>
     </div>
